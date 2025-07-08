@@ -61,7 +61,7 @@ if 'summarized_cent' not in st.session_state:
 
 #_, main, _ = st.columns([1,5,1])
 
-st.title('정유민의 개쩌는 앱')
+st.title('시간 탐색기')
 
 day_by_month = {
     1:31,
