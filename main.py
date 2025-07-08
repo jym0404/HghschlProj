@@ -12,7 +12,7 @@ def refine(soup):
         element.decompose()
     return ul.get_text()
 
-def crawl(month, day):
+def crawl_month_and_day(month, day):
 
     url=f'https://ko.wikipedia.org/wiki/{month}월_{day}일'
 
@@ -30,7 +30,10 @@ if 'scrapped' not in st.session_state:
 if 'summarized' not in st.session_state:
     st.session_state.summarized = None
 
-st.set_page_config(layout='wide')
+#st.set_page_config(layout='wide')
+
+#_, main, _ = st.columns([1,5,1])
+
 st.title('정유민의 개쩌는 앱')
 
 day_by_month = {
@@ -48,7 +51,11 @@ day_by_month = {
     12:31
 }
 
-_, bigcol1, bigcol2, _ = st.columns([1,3,2,1])
+month_and_day, year = st.tabs(['Month and Day','Year'])
+
+### M and D
+
+bigcol1, bigcol2 = month_and_day.columns([3,2])
 
 col1, col2 = bigcol1.columns(2)
 
@@ -60,7 +67,7 @@ clicked_search = bigcol1.button("Search", use_container_width=True)
 #col3, col4 = st.columns(2)
 
 if clicked_search:
-    st.session_state.scrapped = crawl(month,day)
+    st.session_state.scrapped = crawl_month_and_day(month,day)
 
 out1 = bigcol1.text_area("Scrapped", value=st.session_state.scrapped, height=500)
 
@@ -84,3 +91,5 @@ if clicked_summarize:
     st.session_state.summarized = summarize(prompt)
 
 out2 = bigcol2.text_area("Summary", value=st.session_state.summarized, height=500)
+
+######## Years
