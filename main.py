@@ -66,7 +66,7 @@ clicked_search = bigcol1.button("Search", use_container_width=True)
 
 #col3, col4 = st.columns(2)
 
-if clicked_search:
+if clicked_search and month <= 12 and day <= day_by_month[month]:
     st.session_state.scrapped = crawl_month_and_day(month,day)
 
 out1 = bigcol1.text_area("Scrapped", value=st.session_state.scrapped, height=500)
