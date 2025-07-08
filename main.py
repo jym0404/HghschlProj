@@ -8,10 +8,11 @@ MODEL_LIST=['gemma3:4b-it-q4_K_M']
 def summarize(out1, user_ask):
     prompt=f"""{out1}
     
-    다음 글을 '{user_ask}'라는 유저의 요청에 맞춰 요약해줘. (공백이면 알아서 요약해줘)  
-    - 요약은 바로 시작하고, 도입부에 “다음은 ~ 요약입니다.” 같은 문장은 넣지 마.  
+    다음 글을 '{user_ask}'라는 유저의 요청에 맞춰 요약해줘.   
     - 끝인사나 추가 설명도 붙이지 말고, 요약 내용만 간결하게 써줘.
-    - DO NOT SAY ANYTHING EXCEPT THE SUMMARY
+    - 서론 없이 본문만을 줄바꿈을 적절히 사용하여 작성해줘
+    - 요약은 바로 시작하고, 도입부에 “다음은 ~ 요약입니다.” 같은 문장은 넣지 마. 
+    - ONLY SAY THE SUMMARY
     - SPEAK IN KOREAN
     """
 
@@ -74,7 +75,7 @@ month_and_day, year = st.tabs(['Month and Day','Year'])
 
 ###-------------------------------- M and D
 
-bigcol1, bigcol2 = month_and_day.columns([3,2])
+bigcol1, bigcol2 = month_and_day.columns([1,1])
 
 col1, col2 = bigcol1.columns(2)
 
