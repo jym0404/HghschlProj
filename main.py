@@ -25,7 +25,7 @@ def summarize(out1, user_ask):
 
     return response['message']['content']
 
-def refine(soup):
+def refine_month_and_day(soup):
     ul = soup.select_one('#mw-content-text > div.mw-content-ltr.mw-parser-output > ul:nth-of-type(1)')
     removal = ul.find_all('sup', class_='reference')
     for element in removal:
@@ -40,15 +40,22 @@ def crawl_month_and_day(month, day):
 
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
-        return refine(soup)
+        return refine_month_and_day(soup)
     else:
         raise ValueError
 
-if 'scrapped' not in st.session_state:
-    st.session_state.scrapped = None
+if 'scrapped_mnd' not in st.session_state:
+    st.session_state.scrapped_mnd = None
 
-if 'summarized' not in st.session_state:
-    st.session_state.summarized = None
+if 'summarized_mnd' not in st.session_state:
+    st.session_state.summarized_mnd = None
+
+
+if 'scrapped_cent' not in st.session_state:
+    st.session_state.scrapped_cent = None
+
+if 'summarized_cent' not in st.session_state:
+    st.session_state.summarized_cent = None
 
 #st.set_page_config(layout='wide')
 
@@ -71,36 +78,90 @@ day_by_month = {
     12:31
 }
 
-month_and_day, year = st.tabs(['Month and Day','Year'])
+month_and_day, century = st.tabs(['Month and Day', 'Century'])
 
 ###-------------------------------- M and D
 
-bigcol1, bigcol2 = month_and_day.columns([1,1])
+bigcol1_mnd, bigcol2_mnd = month_and_day.columns([1,1])
 
-col1, col2 = bigcol1.columns(2)
+col1_mnd, col2_mnd = bigcol1_mnd.columns(2)
 
-month = col1.number_input("Month", 1, 12)
-day = col2.number_input("Day", 1, day_by_month[month])
+month = col1_mnd.number_input("Month", 1, 12)
+day = col2_mnd.number_input("Day", 1, day_by_month[month])
 
-clicked_search = bigcol1.button("Search", use_container_width=True)
+clicked_search = bigcol1_mnd.button("Search", use_container_width=True)
 
 #col3, col4 = st.columns(2)
 
 if clicked_search and month <= 12 and day <= day_by_month[month]:
-    st.session_state.scrapped = crawl_month_and_day(month,day)
+    st.session_state.scrapped_mnd = crawl_month_and_day(month,day)
 
-out1 = bigcol1.text_area("Scrapped", value=st.session_state.scrapped, height=500)
+out1 = bigcol1_mnd.text_area("Scrapped", value=st.session_state.scrapped_mnd, height=500)
 
 ###########
 
-user_ask = bigcol2.text_input("Request", placeholder="긍정적인 내용 위주로 알려줘")
+user_ask = bigcol2_mnd.text_input("Request", placeholder="긍정적인 내용 위주로 알려줘")
 
-clicked_summarize = bigcol2.button("Summarize", use_container_width=True)
+clicked_summarize = bigcol2_mnd.button("Summarize", use_container_width=True)
 
 if clicked_summarize:
 
-    st.session_state.summarized = summarize(out1, user_ask)
+    st.session_state.summarized_mnd = summarize(out1, user_ask)
 
-out2 = bigcol2.text_area("Summary", value=st.session_state.summarized, height=500)
+out2 = bigcol2_mnd.text_area("Summary", value=st.session_state.summarized_mnd, height=500)
 
-########--------------------------------- Years
+########--------------------------------- Year
+def refine_century(soup):
+    #ul = soup.select_one('#mw-content-text > div.mw-content-ltr.mw-parser-output > ul:nth-of-type(1)')
+    inner = soup.select_one('#bodyContent')
+    removal = inner.find_all('sup', class_='reference')
+    for element in removal:
+        element.decompose()
+    removal = inner.find_all('span', class_='mw-editsection')
+    for element in removal:
+        element.decompose()
+    inner.find('table', class_='infobox').decompose()
+    inner.find('table').decompose()
+    if inner.find('div', class_='reflist'): inner.find('div', class_='reflist').decompose()
+    inner.find('div', class_='navbox').decompose()
+    inner.find('div', class_='navbox').decompose()
+    return inner.get_text().replace('위키백과, 우리 모두의 백과사전.','').replace('\n\n','\n').split('원본 주소')[0].split('년대와 년도')[0]
+
+def crawl_century(cent, is_bc):
+
+    url=f'https://ko.wikipedia.org/wiki/{'기원전_' if is_bc else ''}{cent}세기'
+
+    response = requests.get(url)
+
+    if response.status_code == 200:
+        soup = BeautifulSoup(response.text, 'html.parser')
+        return refine_century(soup)
+    else:
+        raise ValueError
+
+bigcol1_cent, bigcol2_cent = century.columns([1,1])
+
+col1_cent, col2_cent = bigcol1_cent.columns([1,2])
+is_bc = col1_cent.selectbox('',['BC','AD'], index=1) == 'BC'
+cent = col2_cent.number_input('Centuries', min_value=1, max_value=None if is_bc else 21)
+
+clicked_search_cent = bigcol1_cent.button("Search", use_container_width=True, key=158)
+
+#col3, col4 = st.columns(2)
+
+if clicked_search_cent:
+    st.session_state.scrapped_cent = crawl_century(cent, is_bc)
+
+out1_cent = bigcol1_cent.text_area("Scrapped Century", value=st.session_state.scrapped_cent, height=500)
+
+###########
+
+user_ask_cent = bigcol2_cent.text_input("Request", placeholder="긍정적인 내용 위주로 알려줘", key=130)
+
+clicked_summarize_cent = bigcol2_cent.button("Summarize", use_container_width=True, key=999)
+
+if clicked_summarize_cent:
+
+    st.session_state.summarized_cent = summarize(out1_cent, user_ask_cent)
+
+out2_cent = bigcol2_cent.text_area("Summary Century", value=st.session_state.summarized_cent, height=500)
