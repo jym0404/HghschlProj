@@ -10,6 +10,6 @@ def compress_and_encode(file_path):
 
 # 사용 예시:
 if __name__ == "__main__":
-    encoded_str = compress_and_encode("TimeExplorer-Instruction.pdf")
+    encoded_str = compress_and_encode("TImeExplorer-Manual.pdf")
     with open("encoded.txt", "w") as f:
         f.write(encoded_str)
