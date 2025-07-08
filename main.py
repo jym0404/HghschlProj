@@ -1,9 +1,28 @@
 import streamlit as st
 import requests
 from bs4 import BeautifulSoup
+import ollama
 
-def summarize(prompt):
-    return "yeet"
+MODEL_LIST=['gemma3:4b-it-q4_K_M']
+
+def summarize(out1, user_ask):
+    prompt=f"""{out1}
+    
+    다음 글을 '{user_ask}'라는 유저의 요청에 맞춰 요약해줘. (공백이면 알아서 요약해줘)  
+    - 요약은 바로 시작하고, 도입부에 “다음은 ~ 요약입니다.” 같은 문장은 넣지 마.  
+    - 끝인사나 추가 설명도 붙이지 말고, 요약 내용만 간결하게 써줘.
+    - DO NOT SAY ANYTHING EXCEPT THE SUMMARY
+    - SPEAK IN KOREAN
+    """
+
+    response = ollama.chat(model=MODEL_LIST[0], messages=[
+        {
+            'role': 'user',
+            'content': prompt
+        }
+    ])
+
+    return response['message']['content']
 
 def refine(soup):
     ul = soup.select_one('#mw-content-text > div.mw-content-ltr.mw-parser-output > ul:nth-of-type(1)')
@@ -53,7 +72,7 @@ day_by_month = {
 
 month_and_day, year = st.tabs(['Month and Day','Year'])
 
-### M and D
+###-------------------------------- M and D
 
 bigcol1, bigcol2 = month_and_day.columns([3,2])
 
@@ -79,17 +98,8 @@ clicked_summarize = bigcol2.button("Summarize", use_container_width=True)
 
 if clicked_summarize:
 
-    prompt="""{out1}
-    
-    다음 글을 '{USER_ASK}'라는 유저의 요청에 맞춰 요약해줘. (공백이면 알아서 요약해줘)  
-    - 요약은 바로 시작하고, 도입부에 “다음은 ~ 요약입니다.” 같은 문장은 넣지 마.  
-    - 끝인사나 추가 설명도 붙이지 말고, 요약 내용만 간결하게 써줘.
-    - DO NOT SAY ANYTHING EXCEPT THE SUMMARY
-    - SPEAK IN KOREAN
-    """
-
-    st.session_state.summarized = summarize(prompt)
+    st.session_state.summarized = summarize(out1, user_ask)
 
 out2 = bigcol2.text_area("Summary", value=st.session_state.summarized, height=500)
 
-######## Years
+########--------------------------------- Years
