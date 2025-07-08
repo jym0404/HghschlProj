@@ -2,6 +2,24 @@ import streamlit as st
 import requests
 from bs4 import BeautifulSoup
 import ollama
+import base64
+import zstandard as zstd
+
+anniversaries = {
+    (1, 1): "새해 (신정)",
+    (3, 1): "삼일절",
+    (5, 5): "어린이날",
+    (6, 6): "현충일",
+    (8, 15): "광복절",
+    (10, 3): "개천절",
+    (10, 9): "한글날",
+    (12, 25): "크리스마스",
+    (2, 14): "발렌타인데이",
+    (4, 22): "지구의 날",
+    (5, 1): "근로자의 날",
+    (6, 5): "환경의 날",
+    (7, 17): "제헌절"
+}
 
 MODEL_LIST=['gemma3:4b-it-q4_K_M']
 
@@ -26,13 +44,19 @@ def summarize(out1, user_ask):
     return response['message']['content']
 
 def refine_month_and_day(soup):
-    ul = soup.select_one('#mw-content-text > div.mw-content-ltr.mw-parser-output > ul:nth-of-type(1)')
-    removal = ul.find_all('sup', class_='reference')
+    result = BeautifulSoup("", "html.parser").new_tag("div")
+    result.append(soup.select_one('#mw-content-text > div.mw-content-ltr.mw-parser-output > ul:nth-of-type(1)'))
+    result.append(BeautifulSoup("", "html.parser").new_tag("br"))
+    result.append(soup.select_one('#mw-content-text > div.mw-content-ltr.mw-parser-output > ul:nth-of-type(1)'))
+    removal = result.find_all('sup', class_='reference')
     for element in removal:
         element.decompose()
-    return ul.get_text()
+    return result.get_text()
 
 def crawl_month_and_day(month, day):
+
+    if (month, day) in anniversaries:
+        result = f"기념일 : {anniversaries[(month, day)]}\n\n"
 
     url=f'https://ko.wikipedia.org/wiki/{month}월_{day}일'
 
@@ -40,9 +64,10 @@ def crawl_month_and_day(month, day):
 
     if response.status_code == 200:
         soup = BeautifulSoup(response.text, 'html.parser')
-        return refine_month_and_day(soup)
+        result += refine_month_and_day(soup)
     else:
         raise ValueError
+    return result
 
 if 'scrapped_mnd' not in st.session_state:
     st.session_state.scrapped_mnd = None
@@ -61,7 +86,10 @@ if 'summarized_cent' not in st.session_state:
 
 #_, main, _ = st.columns([1,5,1])
 
-st.title('시간 탐색기')
+title, helper = st.columns([20,1])
+
+title.title('시간 탐색기')
+#helper.download_button('?', use_container_width=True)
 
 day_by_month = {
     1:31,
@@ -100,7 +128,7 @@ out1 = bigcol1_mnd.text_area("Scrapped", value=st.session_state.scrapped_mnd, he
 
 ###########
 
-user_ask = bigcol2_mnd.text_input("Request", placeholder="긍정적인 내용 위주로 알려줘")
+user_ask = bigcol2_mnd.text_input("Request", placeholder="어떻게 요약할까요?")
 
 clicked_summarize = bigcol2_mnd.button("Summarize", use_container_width=True)
 
@@ -120,12 +148,12 @@ def refine_century(soup):
     removal = inner.find_all('span', class_='mw-editsection')
     for element in removal:
         element.decompose()
-    inner.find('table', class_='infobox').decompose()
-    inner.find('table').decompose()
+    if inner.find('table', class_='infobox'): inner.find('table', class_='infobox').decompose()
+    if inner.find('table'): inner.find('table').decompose()
     if inner.find('div', class_='reflist'): inner.find('div', class_='reflist').decompose()
-    inner.find('div', class_='navbox').decompose()
-    inner.find('div', class_='navbox').decompose()
-    return inner.get_text().replace('위키백과, 우리 모두의 백과사전.','').replace('\n\n','\n').split('원본 주소')[0].split('년대와 년도')[0]
+    if inner.find('div', class_='navbox'): inner.find('div', class_='navbox').decompose()
+    if inner.find('div', class_='navbox'): inner.find('div', class_='navbox').decompose()
+    return inner.get_text().replace('위키백과, 우리 모두의 백과사전.','').replace('\n\n','\n').split('원본 주소')[0]
 
 def crawl_century(cent, is_bc):
 
@@ -156,7 +184,7 @@ out1_cent = bigcol1_cent.text_area("Scrapped Century", value=st.session_state.sc
 
 ###########
 
-user_ask_cent = bigcol2_cent.text_input("Request", placeholder="긍정적인 내용 위주로 알려줘", key=130)
+user_ask_cent = bigcol2_cent.text_input("Request", placeholder="어떻게 요약할까요?", key=130)
 
 clicked_summarize_cent = bigcol2_cent.button("Summarize", use_container_width=True, key=999)
 
